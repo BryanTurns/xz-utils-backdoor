@@ -22,15 +22,16 @@ We can see this occur through an archived email chain discussing maintanance of 
 >
 > --
 > Dennis Ens
+
 [source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00562.html)
 
-> > Is XZ for Java still maintained?
+> \> Is XZ for Java still maintained?
 > 
 > Yes, by some definition at least, like if someone reports a bug it will
 > get fixed. Development of new features definitely isn't very active. :-(
 > 
 > 
-> > I asked a question here a week ago and have not heard back.
+> \> I asked a question here a week ago and have not heard back.
 > 
 > I saw. I have lots of unanswered emails at the moment and obviously
 > that isn't a good thing. After the latest XZ for Java release I've
@@ -38,11 +39,11 @@ We can see this occur through an archived email chain discussing maintanance of 
 > that hasn't worked so well either even if some progress has happened
 > with XZ Utils.
 > 
-> > When I view the git log I can see it has not updated in over a year.
-> > I am looking for things like multithreaded encoding / decoding and a
-> > few updates that Brett Okken had submited (but are still waiting for
-> > merge). Should I add these things to only my local version, or is
-> > there a plan for these things in the future?
+> \> When I view the git log I can see it has not updated in over a year.
+> \> I am looking for things like multithreaded encoding / decoding and a
+> \> few updates that Brett Okken had submited (but are still waiting for
+> \> merge). Should I add these things to only my local version, or is
+> \> there a plan for these things in the future?
 > 
 > Brett Okken's patches I haven't reviewed so I cannot give definite
 > answers about if you should include them in your local version, sorry.
