@@ -11,6 +11,8 @@ We can only speculate why xz-utils was targeted by this actor(s), but it does se
 Part of this attack involved capitalizing on a single maintainers struggles in his personal life.
 We can see this occur through an archived email chain discussing maintanance of xz for Java .
 
+From Dennis Ens:
+
 > Dear XZ Java Community
 >
 > Is XZ for Java still maintained? I asked a question here a week ago
@@ -24,6 +26,8 @@ We can see this occur through an archived email chain discussing maintanance of 
 > Dennis Ens
 
 [source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00562.html)
+
+From Lasse Collin (original maintainer):
 
 > \> Is XZ for Java still maintained?
 > 
@@ -70,19 +74,192 @@ We can see this occur through an archived email chain discussing maintanance of 
 > -- 
 > Lasse Collin
 
+[source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00563.html)
 
+From Brett Okken:
 
+> I tested the match finder changes on arm64 (aws graviton) and results are
+> quite positive.
+> 
+> 
+> On Thu, May 19, 2022 at 3:41 PM Lasse Collin <lasse.col...@tukaani.org>
+> wrote:
+> 
+> > \> On 2022-05-19 Dennis Ens wrote:
+> \> \> Is XZ for Java still maintained?
+> \>
+> \> Yes, by some definition at least, like if someone reports a bug it will
+> \> get fixed. Development of new features definitely isn't very active. :-(
+> \>
+> \> \> I asked a question here a week ago and have not heard back.
+> \>
+> \> I saw. I have lots of unanswered emails at the moment and obviously
+> \> that isn't a good thing. After the latest XZ for Java release I've
+> \> tried focus on XZ Utils (and ignored XZ for Java), although obviously
+> \> that hasn't worked so well either even if some progress has happened
+> \> with XZ Utils.
+> \>
+> \> \> When I view the git log I can see it has not updated in over a year.
+> \> \> I am looking for things like multithreaded encoding / decoding and a
+> \> \> few updates that Brett Okken had submited (but are still waiting for
+> \> \> merge). Should I add these things to only my local version, or is
+> \> \> there a plan for these things in the future?
+> \>
+> \> Brett Okken's patches I haven't reviewed so I cannot give definite
+> \> answers about if you should include them in your local version, sorry.
+> \>
+> \> The match finder optimizations are more advanced as they are somewhat
+> \> arch-specific so it could be good to have broader testing how much they
+> \> help on different systems (not just x86-64 but 32-bit x86, ARM64, ...)
+> \> and if they behave well on Android too. The benefits have to be clear
+> \> enough (and cause no problems) to make the extra code worth it.
+> \>
+> \> The Delta coder patch is small and relative improvement is big, so that
+> \> likely should get included. The Delta filter is used rarely though and
+> \> even a slow version isn't *that* slow in the big picture (there will
+> \> also be LZMA2 and CRC32/CRC64).
+> \>
+> \> Threading would be nice in the Java version. Threaded decompression only
+> \> recently got committed to XZ Utils repository.
+> \>
+> \> Jia Tan has helped me off-list with XZ Utils and he might have a bigger
+> \> role in the future at least with XZ Utils. It's clear that my resources
+> \> are too limited (thus the many emails waiting for replies) so something
+> \> has to change in the long term.
+> \>
+> \> --
+> \> Lasse Collin
+> \>
+> \>
 
+[source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00564.html)
 
+From Jigar Kumar:
 
+> Progress will not happen until there is new maintainer. XZ for C has sparse 
+> commit log too. Dennis you are better off waiting until new maintainer happens 
+> or fork yourself. Submitting patches here has no purpose these days. The 
+> current maintainer lost interest or doesn't care to maintain anymore. It is sad 
+> to see for a repo like this.
 
-Pressure emails:
-- https://www.mail-archive.com/xz-devel@tukaani.org/msg00566.html
-- https://www.mail-archive.com/xz-devel@tukaani.org/msg00568.html
-- https://www.mail-archive.com/xz-devel@tukaani.org/msg00569.html
+[source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00566.html)
 
-The Concession:
-- https://www.mail-archive.com/xz-devel@tukaani.org/msg00571.html
+From Lasse Collins (original maintainer):
+
+> On 2022-06-07 Jigar Kumar wrote:
+> \> Progress will not happen until there is new maintainer. XZ for C has
+> \> sparse commit log too. Dennis you are better off waiting until new
+> \> maintainer happens or fork yourself. Submitting patches here has no
+> \> purpose these days. The current maintainer lost interest or doesn't
+> \> care to maintain anymore. It is sad to see for a repo like this.
+> 
+> 
+> I haven't lost interest but my ability to care has been fairly limited
+> mostly due to longterm mental health issues but also due to some other
+> things. Recently I've worked off-list a bit with Jia Tan on XZ Utils and
+> perhaps he will have a bigger role in the future, we'll see.
+> 
+> It's also good to keep in mind that this is an unpaid hobby project.
+> 
+> Anyway, I assure you that I know far too well about the problem that
+> not much progress has been made. The thought of finding new maintainers
+> has existed for a long time too as the current situation is obviously
+> bad and sad for the project.
+> 
+> A new XZ Utils stable branch should get released this year with
+> threaded decoder etc. and a few alpha/beta releases before that.
+> Perhaps the moment after the 5.4.0 release would be a convenient moment
+> to make changes in the list of project maintainer(s).
+> 
+> Forks are obviously another possibility and I cannot control that. If
+> those happen, I hope that file format changes are done so that no
+> silly problems occur (like using the same ID for different things in
+> two projects). 7-Zip supports .xz and keeping its developer Igor Pavlov
+> informed about format changes (including new filters) is important too.
+> 
+> -- 
+> Lasse Collin
+
+[source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00567.html)
+
+From Jigar Kumar:
+
+> \> Anyway, I assure you that I know far too well about the problem that
+> \> not much progress has been made. The thought of finding new maintainers
+> \> has existed for a long time too as the current situation is obviously
+> \> bad and sad for the project.
+> \>
+> \> A new XZ Utils stable branch should get released this year with
+> \> threaded decoder etc. and a few alpha/beta releases before that.
+> \> Perhaps the moment after the 5.4.0 release would be a convenient moment
+> \> to make changes in the list of project maintainer(s).
+> 
+> 
+> With your current rate, I very doubt to see 5.4.0 release this year. The only 
+> progress since april has been small changes to test code. You ignore the many 
+> patches bit rotting away on this mailing list. Right now you choke your repo. 
+> Why wait until 5.4.0 to change maintainer? Why delay what your repo needs?
+
+[source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00568.html)
+
+From Denis Ens:
+
+> \>\> I haven't lost interest but my ability to care has been fairly limited
+> \>\> mostly due to longterm mental health issues but also due to some other
+> \>\> things. Recently I've worked off-list a bit with Jia Tan on XZ Utils and
+> \>\> perhaps he will have a bigger role in the future, we'll see.
+> \>\>
+> \>\> It's also good to keep in mind that this is an unpaid hobby project.
+> \>\>
+> \>\> Anyway, I assure you that I know far too well about the problem that
+> \>\> not much progress has been made. The thought of finding new maintainers
+> \>\> has existed for a long time too as the current situation is obviously
+> \>\> bad and sad for the project.
+> 
+> 
+> \> With your current rate, I very doubt to see 5.4.0 release this year. The only 
+> \> progress since april has been small changes to test code. You ignore the many 
+> \> patches bit rotting away on this mailing list. Right now you choke your repo. 
+> \> Why wait until 5.4.0 to change maintainer? Why delay what your repo needs?
+> 
+> I am sorry about your mental health issues, but its important to be
+> aware of your own limits. I get that this is a hobby project for all
+> contributors, but the community desires more. Why not pass on
+> maintainership for XZ for C so you can give XZ for Java more
+> attention? Or pass on XZ for Java to someone else to focus on XZ for
+> C? Trying to maintain both means that neither are maintained well.
+> 
+> --
+> Dennis Ens
+
+[source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00569.html)
+
+From Lasse Collins (
+
+> On 2022-06-21 Dennis Ens wrote:
+> \> Why not pass on maintainership for XZ for C so you can give XZ for
+> \> Java more attention? Or pass on XZ for Java to someone else to focus
+> \> on XZ for C? Trying to maintain both means that neither are
+> \> maintained well.
+> 
+> 
+> Finding a co-maintainer or passing the projects completely to someone
+> else has been in my mind a long time but it's not a trivial thing to
+> do. For example, someone would need to have the skills, time, and enough
+> long-term interest specifically for this. There are many other projects
+> needing more maintainers too.
+> 
+> As I have hinted in earlier emails, Jia Tan may have a bigger role in
+> the project in the future. He has been helping a lot off-list and is
+> practically a co-maintainer already. :-) I know that not much has
+> happened in the git repository yet but things happen in small steps. In
+> any case some change in maintainership is already in progress at least
+> for XZ Utils.
+> 
+> -- 
+> Lasse Collin
+
+[source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00571.html)
 
 # The Git History and Release
 
