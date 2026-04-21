@@ -19,10 +19,56 @@ We can see this occur through an archived email chain discussing maintanance of 
 > encoding / decoding and a few updates that Brett Okken had submited
 > (but are still waiting for merge). Should I add these things to only
 > my local version, or is there a plan for these things in the future?
-
+>
 > --
 > Dennis Ens
 [source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00562.html)
+
+> > Is XZ for Java still maintained?
+> 
+> Yes, by some definition at least, like if someone reports a bug it will
+> get fixed. Development of new features definitely isn't very active. :-(
+> 
+> 
+> > I asked a question here a week ago and have not heard back.
+> 
+> I saw. I have lots of unanswered emails at the moment and obviously
+> that isn't a good thing. After the latest XZ for Java release I've
+> tried focus on XZ Utils (and ignored XZ for Java), although obviously
+> that hasn't worked so well either even if some progress has happened
+> with XZ Utils.
+> 
+> > When I view the git log I can see it has not updated in over a year.
+> > I am looking for things like multithreaded encoding / decoding and a
+> > few updates that Brett Okken had submited (but are still waiting for
+> > merge). Should I add these things to only my local version, or is
+> > there a plan for these things in the future?
+> 
+> Brett Okken's patches I haven't reviewed so I cannot give definite
+> answers about if you should include them in your local version, sorry.
+> 
+> The match finder optimizations are more advanced as they are somewhat
+> arch-specific so it could be good to have broader testing how much they
+> help on different systems (not just x86-64 but 32-bit x86, ARM64, ...)
+> and if they behave well on Android too. The benefits have to be clear
+> enough (and cause no problems) to make the extra code worth it.
+> 
+> The Delta coder patch is small and relative improvement is big, so that
+> likely should get included. The Delta filter is used rarely though and
+> even a slow version isn't *that* slow in the big picture (there will
+> also be LZMA2 and CRC32/CRC64).
+> 
+> Threading would be nice in the Java version. Threaded decompression only
+> recently got committed to XZ Utils repository.
+> 
+> Jia Tan has helped me off-list with XZ Utils and he might have a bigger
+> role in the future at least with XZ Utils. It's clear that my resources
+> are too limited (thus the many emails waiting for replies) so something
+> has to change in the long term.
+> 
+> -- 
+> Lasse Collin
+
 
 
 
