@@ -9,7 +9,8 @@ We can only speculate why xz-utils was targeted by this actor(s), but it does se
 # Social Engineering
 
 Part of this attack involved capitalizing on a single maintainers struggles in his personal life.
-We can see this occur through an archived email chain discussing maintanance of xz for Java .
+We can see this occur through an archived email chain discussing maintanance of xz for Java.
+I have included the full email chain here in order to help preserve it. 
 
 From Dennis Ens:
 
@@ -144,7 +145,7 @@ From Jigar Kumar:
 
 [source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00566.html)
 
-From Lasse Collins (original maintainer):
+From Lasse Collin (original maintainer):
 
 > On 2022-06-07 Jigar Kumar wrote:
 > > Progress will not happen until there is new maintainer. XZ for C has
@@ -234,7 +235,7 @@ From Denis Ens:
 
 [source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00569.html)
 
-From Lasse Collins (
+From Lasse Collin (original maintainer)
 
 > On 2022-06-21 Dennis Ens wrote:
 > > Why not pass on maintainership for XZ for C so you can give XZ for
@@ -260,6 +261,8 @@ From Lasse Collins (
 > Lasse Collin
 
 [source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00571.html)
+
+
 
 # The Git History and Release
 
