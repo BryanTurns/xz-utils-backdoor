@@ -173,7 +173,7 @@ eval $zrKcHD
 # Stage 2 Bash Payload (part 2, IFUNC)
 
 At build time due to the substitutions in part 1 of this script stage 2 is reexecuted, but goes down a different branch and is what actually results in the backdoor finally being added.
-Again, we will break it down piece by piece with the source for this branch available [here](./stage2-build.sh).
+Again, we will break it down piece by piece with the formatted source for this branch available [here](./stage2-build.sh).
 
 
 It begins with another extensibility section followed by another set of checks to ensure the backdoor won't cause weird errors on user systems. 
@@ -216,6 +216,7 @@ So imagine in my notes taking application I need to use some sort of math librar
 The library will provide a resolver that will edit the Global Offset Resolver table (GOT) for that program. 
 Nowadays most security sensitive programs are compiled with an option that forces function resolution at program startup. 
 This allows for the GOT to be locked to read only which prevents edits from buffer overflows. 
+
 This backdoor takes advantage of that small window when the GOT is editable by creating a malicous resolver which is present in `liblzma_la-crc64-fast.o`. 
 The code works by hijacking crc64_fast.c's already present resolver and having it call `_is_arch_extension_supported` rather than `is_arch_extension_supported`. 
 This results in it calling `_get_cpuid` rather than `get_cpuid`. 
@@ -232,6 +233,18 @@ $CC $DEFS $DEFAULT_INCLUDES $INCLUDES $liblzma_la_CPPFLAGS $CPPFLAGS $AM_CFLAGS 
 ```
 
 # The Backdoor
+
+```
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    signature (114 bytes)                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| x (1 bit) |            unused ? (14 bit)          | y (1 bit) |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|        unknown (8 bit)        |         length (8 bit)        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|        unknown (8 bit)        |         command \x00          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 # Consequences
 
