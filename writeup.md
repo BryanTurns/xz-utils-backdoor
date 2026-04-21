@@ -17,15 +17,15 @@ https://www.mail-archive.com/xz-devel@tukaani.org/msg00571.html
 # The Git History and Release
 Jia Tan created two releases of xz-utils thrat were compromised. There is 5.6.0 and 5.6.1 which contains some additional extensibility to the backdoor. You will not be able to find this release in the releases tab, but it can be found by enumerating the URL. This shows Github’s auto-packaged release which is NOT what we are looking for.
 
-[github release page](./imgs/gh-release.png )
+![github release page](./imgs/gh-release.png )
 
 Even though the source contains pieces of the code, it does not contain the ‘switch’ that causes the backdoor to activate. That switch is build-to-host.m4 and it is only present in Jia Tan’s release of xz-utils 5.6.0/5.6.1. We can find the releases containing build-to-host.m4 on the wayback machine by going to the same Github URL and navigating back to March 29th 2024. If you aren’t experienced in C projects, you might find this addition outside of the normal Git flow raising alarm bells. However, this is perfectly normal. Doing this simplifies the build process for end users and build-to-host.m4 is present in previous releases of xz-utils
 
-[wayback machine of github release page](./imgs/wayback.png)
+![wayback machine of github release page](./imgs/wayback.png)
 
 Let’s compare the old build-to-host.m4 in 5.4.7 with the Jia Tan’s in 5.6.1:
 
-[build to host](./imgs/build-to-host.png)
+![build to host](./imgs/build-to-host.png)
 
 I will start by extracting two important variables/patterns that we will see often:
 ```bash
@@ -35,7 +35,7 @@ gl_path_map='tr "\t \-_" " \t_\-"'
 
 gl_am_configmake greps the source directory for any binary that matches 4 hashtags followed by 5 alphanumeric characters and then another 5 dashes. Running this command from the project directory with srcdir set to ‘./’ yields ‘tests/files/bad-3-corrupt_lzma2.xz’. This is one of the binary test files that Jia Tan added. 
 
-[xxd of the test file Jia Tan added](./imgs/xdd.png)
+![xxd of the test file Jia Tan added](./imgs/xdd.png)
 
 Then there is the gl_path_map which just replaces tabs with spaces, spaces with tabs, underscores with dashes, and dashes with underscores. These variables are then used in long chains of commands to obfuscate what is happening. 
 
