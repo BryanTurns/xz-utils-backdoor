@@ -8,7 +8,26 @@ We can only speculate why xz-utils was targeted by this actor(s), but it does se
 
 # Social Engineering
 
-Jia Tan is evil but has aura 
+Part of this attack involved capitalizing on a single maintainers struggles in his personal life.
+We can see this occur through an archived email chain discussing maintanance of xz for Java .
+
+> Dear XZ Java Community
+>
+> Is XZ for Java still maintained? I asked a question here a week ago
+> and have not heard back. When I view the git log I can see it has not
+> updated in over a year. I am looking for things like multithreaded
+> encoding / decoding and a few updates that Brett Okken had submited
+> (but are still waiting for merge). Should I add these things to only
+> my local version, or is there a plan for these things in the future?
+
+> --
+> Dennis Ens
+[source](https://www.mail-archive.com/xz-devel@tukaani.org/msg00562.html)
+
+
+
+
+
 
 Pressure emails:
 - https://www.mail-archive.com/xz-devel@tukaani.org/msg00566.html
@@ -282,6 +301,8 @@ Decrypted blob:
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 [source](https://github.com/amlweems/xzbot)
+
+The command will then be executed using system() if a*b+c = 2 and then sshd will report a ssh key authorization failure. 
 
 # Consequences
 
