@@ -601,6 +601,3 @@ This is likely the GOT/PLT shenanigans.
 
 ![ida xrefs to suspicous sub routine with some functions named](./imgs/ida-xrefs-2.png)
 
-# Consequences
-
-
