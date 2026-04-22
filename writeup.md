@@ -1,12 +1,12 @@
 # Final Lab Writeup
 
-# The Goal
+## The Goal
 
 The goal of the threat actor was to introduce a RCE into sshd for debian x86 systems discretely through a supply chain attack of a downstream library.
 Determining the Target
 We can only speculate why xz-utils was targeted by this actor(s), but it does seem like some thought went into targeting this library. 
 
-# Social Engineering
+## Social Engineering
 
 Part of this attack involved capitalizing on a single maintainers struggles in his personal life.
 We can see this occur through an archived email chain discussing maintanance of xz for Java.
@@ -267,7 +267,7 @@ Development on xz-utils and xz for Java was slow and PRs with genuine features w
 This is what allowed Jia Tan to begin to lead development of xz-utils and eventually slip the backdoor in.
 
 
-# The Git History and Release
+## The Git History and Release
 
 Jia Tan created two releases of xz-utils thrat were compromised. 
 There is 5.6.0 and 5.6.1 which contains some additional extensibility to the backdoor. 
@@ -335,14 +335,14 @@ gl_config_gt="eval \$gl_[$1]_config"
 eval $gl_config_gt | $SHELL 2>/dev/null
 ```
 
-# Stage 1 Bash Payload
+## Stage 1 Bash Payload
 
 The stage 1 bash payload is the contents of `gl_[$1]_config`. I obtained the bash by running the command in a vm and echoing what ended up in the variable. This script is primarily just setting up for the second stage by decompressing the other test file that Jia Tan added. There is a series of head calls that extract pieces of tests/files/good-large_compressed.lzma. Then we do another substitution but this time of bytes. Then we perform another decompression and pipe the result, the second stage bash payload, to bash. 
 
 [Stage 1 source](./stage1.sh)
 
 
-# Stage 2 Bash Payload (part 1)
+## Stage 2 Bash Payload (part 1)
 
 The stage 2 part 1 (configure step) bash payload formatted is available here: [bash stage 2 part 1](./stage2-configure.sh)
 
@@ -415,7 +415,7 @@ sed -i "/$m/i$l" src/liblzma/Makefile || true
 eval $zrKcHD
 ```
 
-# Stage 2 Bash Payload (part 2, IFUNC)
+## Stage 2 Bash Payload (part 2, IFUNC)
 
 At build time due to the substitutions in part 1 of this script stage 2 is reexecuted, but goes down a different branch and is what actually results in the backdoor finally being added.
 Again, we will break it down piece by piece with the formatted source for this branch available [here](./stage2-build.sh).
@@ -538,7 +538,7 @@ Then there is a section of code that handles cleaning up if any of these fails a
     rm -f liblzma_la-crc64-fast.o || true
 ```
 
-# The Backdoor
+## The Backdoor
 
 As expected, the backdoor itself is also thoughtfully crafted.
 Naively, you would think this backdoor works by allowing the attacker who has a certain private key ssh access. 
@@ -581,7 +581,7 @@ Decrypted blob:
 ```
 [source](https://github.com/amlweems/xzbot)
 
-We can confirm some of this behavior by analyzing the compromised shared object file in IDA.
+We can confirm some of this behavior by analyzing the compromised shared object file in IDA Free Linux.
 I started by doing a xref graph from liblzma_crc64 as this should contain the backdoor or
 the GOT hijacking. Also, for clarity, CRC is cyclic redundancy check and is used to verify
 the integrity of blocks within xz compression.
@@ -600,4 +600,28 @@ Unfortunately we ran out of time at this point, but within the malicous `_get_cp
 This is likely the GOT/PLT shenanigans.
 
 ![ida xrefs to suspicous sub routine with some functions named](./imgs/ida-xrefs-2.png)
+
+## Attack Impact
+
+The attack compromised all debian distributions that patch sshd to support systemd-notify which has xz-utils as a downstram dependency.
+This attack introduced an RCE into any bleeding edge distributions of Red Hat, SUSE, and Debian.
+Miraculously the vulnerability was introduced on March 9th, but caught by a developer on March 29th.
+This developer, Andres Freund, discovered the vulnerability after noticing a benchmark ran half a second slower than it normally does.
+This combined with suspicously slow responses when connecting to SSH lead him to investigate and discover the backdoor. 
+Had this gone undiscovered Ubuntu, RHEL, and other widely used distributions would have all had a backdoor built right into them.
+
+## Indicators of Compromise
+
+A significant increase in resources used by sshd.
+
+Commands being executed by root (sshd typically runs as root).
+
+Valgrind errors due to weird IFUNC behavior from the backdoors shenanigans.
+
+Slow reponses to ssh requests.
+
+## Removal
+
+At the time the recomendation was to downgrade to a previous OS release.
+However, now that there are updated non-vulnerable releases, we would recomend upgrading instead.
 
