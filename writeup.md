@@ -1,5 +1,15 @@
 # Final Lab Writeup
 
+## Self-Grading
+
+### Completeness: 18/20, Time/Effort: 80/80
+
+As we talked with you in class about, we spend a *lot* of time on this project, especially with the bash deobfuscation, finding the vulnerable source-code (including the elusive build-to-host.m4), and recreating the build steps. Many late nights in CSEL. We think we have a quality writup and submitted a good presentation, while exploring the malware/attack thoroughly. 
+
+We only dock points for completeness because we were stretched for time towards the end of the project and weren't able to do advanced dynamic analysis on the constructed malicious binary. 
+
+
+
 ## The Goal
 
 The goal of the threat actor was to introduce a RCE into sshd for debian x86 systems discretely through a supply chain attack of a downstream library.
